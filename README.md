@@ -1,0 +1,104 @@
+# Unity 2D Action Prototype — 4일 개발
+
+4일 동안 제작한 PC용 2D 플랫폼 액션 전투 프로토타입의 코드 포트폴리오입니다. 이동·점프·대시, 근접 전투와 스킬, 패링, 적 AI와 웨이브 진행을 하나의 플레이 흐름으로 구성했습니다.
+
+## 프로젝트 개요
+
+| 항목 | 내용 |
+| --- | --- |
+| 개발 기간 | 4일 · 과제 제출 결과물 기준 |
+| 개발 형태 | 개인 과제 · 클라이언트 프로그래밍 및 게임 내 기능 구성 |
+| 환경 | Unity 6000.3.8f1 / C# / Windows |
+| 주요 기술 | Input System, ScriptableObject, 컴포넌트 구성, 상태 변경 이벤트, 오브젝트 풀 |
+| 외부 리소스 | 그래픽·음원 에셋 활용 · [출처](THIRD_PARTY_ASSETS.md) |
+
+**이 저장소는 코드 열람용입니다.** 원본 작업 폴더에서 스크립트, Input Actions 정의와 설명 문서를 추출했습니다. 씬·프리팹·애니메이션·외부 에셋이 포함되지 않아 복제만으로 게임을 실행할 수는 없습니다. Unity 버전과 패키지 의존성은 참고 자료로 함께 제공합니다.
+
+개발 기간은 과제 제출 결과물의 작업 기간을 뜻합니다. 최초 Git 커밋 시각은 포트폴리오용으로 코드를 정리해 업로드한 시각이며, 원래 개발 이력을 재현한 것은 아닙니다.
+
+## 구현 범위
+
+- **조작:** 이동, 점프, 대시, 일반 공격, 강공격, 공중 내려찍기, 체력 회복, 패링.
+- **전투:** 근접·투사체 판정, 피해·회복, 피격 경직과 넉백, 슈퍼아머.
+- **적:** 공통 유닛 구조를 사용하는 근접·원거리·순찰·보스 행동.
+- **진행:** 스테이지 데이터에 따른 적 생성, 웨이브 진행, 게임 오버·클리어 이벤트, 재시작.
+- **피드백:** 공격·피격 이펙트와 사운드, 대시 잔상, 카메라 흔들림, 체력 표시.
+- **재사용:** 유닛, 스킬 판정 오브젝트, 이펙트와 플로팅 메시지의 풀 구성.
+
+## 코드를 읽는 순서
+
+1. [아키텍처 설명](docs/ARCHITECTURE.md): 실행 흐름, 상태와 스킬의 구성, 다음 리팩터링 방향.
+2. [Unit](Assets/Scripts/Runtime/%28Main%29UnitSystem/Core/Unit.cs) / [UnitComponent](Assets/Scripts/Runtime/%28Main%29UnitSystem/Core/UnitComponent.cs): 유닛 공통 구조와 컴포넌트의 상태 이벤트 구독.
+3. [UnitStateController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Control/UnitStateController.cs): 이동·행동·상태 효과의 평가와 변경 이벤트.
+4. [SkillDataObject](Assets/Scripts/Runtime/%28Main%29UnitSystem/Data/Skill/SkillDataObject.cs) / [UnitSkillController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Control/UnitSkillController.cs): 스킬 데이터와 실행 흐름.
+5. [UnitSkillLauncher](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillLauncher.cs) / [UnitSkillEngine](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillEngine.cs): 근접·투사체 판정의 준비, 실행과 반환.
+6. [UnitParryController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitParryController.cs): 패링 유효 시간, 성공과 실패 처리.
+7. [StageController](Assets/Scripts/Runtime/StageSystem/Core/StageController.cs) / [UnitController](Assets/Scripts/Runtime/StageSystem/Unit/UnitController.cs): 웨이브 진행과 유닛 생성·반환.
+
+## 설계 포인트
+
+### 공통 유닛과 역할별 컴포넌트
+
+플레이어와 AI는 담당 컴포넌트에 행동 의도를 전달합니다. 이동, 점프, 공격 판정, 피격과 연출은 각 컴포넌트가 담당하고 상태 변경 이벤트에 반응합니다. 입력 방식이 달라도 공통 실행 구조를 사용할 수 있도록 구성했습니다.
+
+### 상태를 세 채널로 분리
+
+| 채널 | 표현하는 내용 | 현재 값의 형태 |
+| --- | --- | --- |
+| Movement | 이동, 점프, 낙하, 벽 접촉, 대시 | 우선순위에 따라 선택한 단일 상태 |
+| Action | 공격 준비·실행·후딜레이, 피격, 패링, 사망 | 우선순위에 따라 선택한 단일 상태 |
+| Status | 슈퍼아머, 패링 성공 | 동시에 적용 가능한 복합 플래그 |
+
+이동과 공격을 별도로 표현해 공중 공격이나 대시와 공격 판정이 결합되는 동작을 구성합니다.
+
+### 데이터 기반 스킬
+
+`SkillDataObject`에 타이밍, 애니메이션, 이동 제약, 슈퍼아머, 판정, 사운드와 이펙트를 모았습니다. 공통 실행 구조가 지원하는 범위에서는 데이터를 설정해 스킬의 모션·판정·연출을 바꿀 수 있습니다. 새로운 행동 규칙은 실행 구조 확장이 필요합니다.
+
+## 현재 한계와 개선 계획
+
+현재 상태 평가는 프레임 단위입니다. 런타임 데이터와 확정 상태의 갱신 시점에 차이가 있어, 일부 컴포넌트는 입력 충돌이나 물리 처리를 위해 런타임 데이터를 직접 확인합니다.
+
+아키텍처 문서에 정리한 다음 작업은 상태 공급자의 쓰기 권한을 분리하고, 데이터 변경 완료 후 상태를 평가·전파하는 흐름을 만드는 것입니다. **이 항목은 개선 계획이며 완료된 기능이 아닙니다.**
+
+## 구성
+
+```text
+Assets/
+  PlayerInputActions.inputactions
+  Scripts/
+    Runtime/
+      (Main)UnitSystem/   # 공통 유닛, 입력, 상태, 스킬, 기능별 컴포넌트
+      StageSystem/       # 스테이지 진행, 유닛 생성, UI
+      PresentationSystem/# 이펙트, 메시지, 카메라
+      Environment/       # 단방향 플랫폼
+    Editor/              # 인스펙터 보조 코드
+Packages/                # 원본 프로젝트의 패키지 목록과 잠금 파일
+ProjectSettings/
+  ProjectVersion.txt     # 원본 Unity 버전
+docs/
+  ARCHITECTURE.md
+  CONTROLS.md
+THIRD_PARTY_ASSETS.md
+```
+
+`PlayerInputActions.cs`는 Unity Input System이 생성한 파일입니다. 직접 작성한 런타임 코드와 구분해 봐주세요.
+
+## 조작
+
+| 동작 | 키 |
+| --- | --- |
+| 이동 | 방향키 |
+| 일반 공격 / 강공격 | Z / X |
+| 공중 내려찍기 / 체력 회복 | A / S |
+| 대시 / 패링 | Left Shift / Left Ctrl |
+| 점프 | Spacebar |
+
+## 자료
+
+- [Notion 프로젝트 소개](https://app.notion.com/p/3ff650b00a5c8122b908dfa6e07fc509) — 페이지 접근 권한에 따라 열람이 제한될 수 있습니다.
+- [아키텍처 설명](docs/ARCHITECTURE.md)
+- [조작 방법](docs/CONTROLS.md)
+- [외부 에셋 출처](THIRD_PARTY_ASSETS.md)
+
+과제 원문, 면접 답변, 녹화 영상, 외부 에셋 원본, Unity 캐시와 빌드 결과물은 업로드 대상에서 제외했습니다.
