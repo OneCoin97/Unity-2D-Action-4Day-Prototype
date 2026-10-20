@@ -10,9 +10,9 @@
 | 개발 형태 | 개인 과제 · 클라이언트 프로그래밍 및 게임 내 기능 구성 |
 | 환경 | Unity 6000.3.8f1 / C# / Windows |
 | 주요 기술 | Input System, ScriptableObject, 컴포넌트 구성, 상태 변경 이벤트, 오브젝트 풀 |
-| 외부 리소스 | 그래픽·음원 에셋 활용 · [출처](THIRD_PARTY_ASSETS.md) |
+| 외부 리소스 | 그래픽·음원 에셋 활용 · 출처는 [Notion 프로젝트 소개](https://app.notion.com/p/3ff650b00a5c8122b908dfa6e07fc509) 참고 |
 
-**이 저장소는 코드 열람용입니다.** 원본 작업 폴더에서 스크립트, Input Actions 정의와 설명 문서를 추출했습니다. 씬·프리팹·애니메이션·외부 에셋이 포함되지 않아 복제만으로 게임을 실행할 수는 없습니다. Unity 버전과 패키지 의존성은 참고 자료로 함께 제공합니다.
+**이 저장소는 C# 스크립트와 아키텍처 설명을 담은 코드 포트폴리오입니다.** 설계 설명은 이 README에 모았습니다. 씬·프리팹·외부 에셋을 포함하지 않아 복제만으로 게임을 실행할 수는 없습니다.
 
 개발 기간은 과제 제출 결과물의 작업 기간을 뜻합니다. 최초 Git 커밋 시각은 포트폴리오용으로 코드를 정리해 업로드한 시각이며, 원래 개발 이력을 재현한 것은 아닙니다.
 
@@ -27,13 +27,13 @@
 
 ## 코드를 읽는 순서
 
-1. [아키텍처 설명](docs/ARCHITECTURE.md): 실행 흐름, 상태와 스킬의 구성, 다음 리팩터링 방향.
-2. [Unit](Assets/Scripts/Runtime/%28Main%29UnitSystem/Core/Unit.cs) / [UnitComponent](Assets/Scripts/Runtime/%28Main%29UnitSystem/Core/UnitComponent.cs): 유닛 공통 구조와 컴포넌트의 상태 이벤트 구독.
-3. [UnitStateController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Control/UnitStateController.cs): 이동·행동·상태 효과의 평가와 변경 이벤트.
-4. [SkillDataObject](Assets/Scripts/Runtime/%28Main%29UnitSystem/Data/Skill/SkillDataObject.cs) / [UnitSkillController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Control/UnitSkillController.cs): 스킬 데이터와 실행 흐름.
-5. [UnitSkillLauncher](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillLauncher.cs) / [UnitSkillEngine](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillEngine.cs): 근접·투사체 판정의 준비, 실행과 반환.
-6. [UnitParryController](Assets/Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitParryController.cs): 패링 유효 시간, 성공과 실패 처리.
-7. [StageController](Assets/Scripts/Runtime/StageSystem/Core/StageController.cs) / [UnitController](Assets/Scripts/Runtime/StageSystem/Unit/UnitController.cs): 웨이브 진행과 유닛 생성·반환.
+1. [아키텍처 설명](#설계-포인트): 실행 흐름과 상태·스킬의 구성. 아래 [개선 계획](#현재-한계와-개선-계획)도 함께 참고해 주세요.
+2. [Unit](Scripts/Runtime/%28Main%29UnitSystem/Core/Unit.cs) / [UnitComponent](Scripts/Runtime/%28Main%29UnitSystem/Core/UnitComponent.cs): 유닛 공통 구조와 컴포넌트의 상태 이벤트 구독.
+3. [UnitStateController](Scripts/Runtime/%28Main%29UnitSystem/Control/UnitStateController.cs): 이동·행동·상태 효과의 평가와 변경 이벤트.
+4. [SkillDataObject](Scripts/Runtime/%28Main%29UnitSystem/Data/Skill/SkillDataObject.cs) / [UnitSkillController](Scripts/Runtime/%28Main%29UnitSystem/Control/UnitSkillController.cs): 스킬 데이터와 실행 흐름.
+5. [UnitSkillLauncher](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillLauncher.cs) / [UnitSkillEngine](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillEngine.cs): 근접·투사체 판정의 준비, 실행과 반환.
+6. [UnitParryController](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitParryController.cs): 패링 유효 시간, 성공과 실패 처리.
+7. [StageController](Scripts/Runtime/StageSystem/Core/StageController.cs) / [UnitController](Scripts/Runtime/StageSystem/Unit/UnitController.cs): 웨이브 진행과 유닛 생성·반환.
 
 ## 설계 포인트
 
@@ -51,6 +51,8 @@
 
 **입력과 AI 판단 → 기능별 요청 처리 및 런타임 데이터 갱신 → 중앙에서 상태 결정·변경 → 이벤트로 상태 전달 → 각 컴포넌트의 기능 실행**으로 흐름을 구성했습니다. 이를 통해 입력 방식과 기능 구현의 책임을 나누고, 유닛마다 필요한 기능을 조합할 수 있도록 했습니다.
 
+사운드나 잔상 컴포넌트가 없는 유닛은 해당 연출만 제외되며, 대시 상태와 이동은 유지됩니다. 각 유닛은 게임 규칙에 필요한 기능을 갖추고, 연출 기능은 선택적으로 조합할 수 있습니다.
+
 ### 상태를 세 채널로 분리
 
 | 채널 | 표현하는 내용 | 현재 값의 형태 |
@@ -63,33 +65,29 @@
 
 ### 데이터 기반 스킬
 
-`SkillDataObject`에 타이밍, 애니메이션, 이동 제약, 슈퍼아머, 판정, 사운드와 이펙트를 모았습니다. 공통 실행 구조가 지원하는 범위에서는 데이터를 설정해 스킬의 모션·판정·연출을 바꿀 수 있습니다. 새로운 행동 규칙은 실행 구조 확장이 필요합니다.
+`SkillDataObject`에 타이밍, 애니메이션, 이동 제약, 슈퍼아머, 판정, 사운드와 이펙트를 모았습니다. 스킬 입력이 들어오면 `UnitSkillController`가 선택한 스킬을 현재 스킬로 등록하고, 각 컴포넌트는 현재 스킬에서 자신에게 필요한 데이터를 해석합니다.
+
+애니메이션 컴포넌트는 모션 클립을, 이동 컴포넌트는 이동 배율과 대시 속성을, 공격 판정 컴포넌트는 판정 형태·범위·투사체 속도를 사용합니다. 사운드와 이펙트 컴포넌트도 같은 스킬 데이터에서 각 연출 정보를 가져옵니다.
+
+공통 실행 구조가 지원하는 범위에서는 데이터를 설정해 스킬의 모션·타이밍·판정·연출을 바꿀 수 있습니다. 새로운 행동 규칙은 실행 구조 확장이 필요합니다.
 
 ## 현재 한계와 개선 계획
 
 현재 상태 평가는 프레임 단위입니다. 런타임 데이터와 확정 상태의 갱신 시점에 차이가 있어, 일부 컴포넌트는 입력 충돌이나 물리 처리를 위해 런타임 데이터를 직접 확인합니다.
 
-아키텍처 문서에 정리한 다음 작업은 상태 공급자의 쓰기 권한을 분리하고, 데이터 변경 완료 후 상태를 평가·전파하는 흐름을 만드는 것입니다. **이 항목은 개선 계획이며 완료된 기능이 아닙니다.**
+다음 리팩터링에서는 상태 공급자만 런타임 데이터를 변경하도록 쓰기 권한을 분리하고, 데이터 변경 완료 후 즉시 상태를 평가·전파하는 흐름을 만들 계획입니다. 일반 컴포넌트는 확정된 상태와 변경 이벤트를 중심으로 동작하도록 정리해, 상태 변경 원인과 반영 시점을 명확하게 만들고자 합니다. **이 항목은 개선 계획이며 완료된 기능이 아닙니다.**
 
 ## 구성
 
 ```text
-Assets/
-  PlayerInputActions.inputactions
-  Scripts/
-    Runtime/
-      (Main)UnitSystem/   # 공통 유닛, 입력, 상태, 스킬, 기능별 컴포넌트
-      StageSystem/       # 스테이지 진행, 유닛 생성, UI
-      PresentationSystem/# 이펙트, 메시지, 카메라
-      Environment/       # 단방향 플랫폼
-    Editor/              # 인스펙터 보조 코드
-Packages/                # 원본 프로젝트의 패키지 목록과 잠금 파일
-ProjectSettings/
-  ProjectVersion.txt     # 원본 Unity 버전
-docs/
-  ARCHITECTURE.md
-  CONTROLS.md
-THIRD_PARTY_ASSETS.md
+Scripts/
+  Runtime/
+    (Main)UnitSystem/     # 공통 유닛, 입력, 상태, 스킬, 기능별 컴포넌트
+    StageSystem/         # 스테이지 진행, 유닛 생성, UI
+    PresentationSystem/  # 이펙트, 메시지, 카메라
+    Environment/         # 단방향 플랫폼
+  Editor/                # 인스펙터 보조 코드
+README.md                # 프로젝트 소개와 아키텍처 설명
 ```
 
 `PlayerInputActions.cs`는 Unity Input System이 생성한 파일입니다. 직접 작성한 런타임 코드와 구분해 봐주세요.
@@ -107,8 +105,3 @@ THIRD_PARTY_ASSETS.md
 ## 자료
 
 - [Notion 프로젝트 소개](https://app.notion.com/p/3ff650b00a5c8122b908dfa6e07fc509) — 페이지 접근 권한에 따라 열람이 제한될 수 있습니다.
-- [아키텍처 설명](docs/ARCHITECTURE.md)
-- [조작 방법](docs/CONTROLS.md)
-- [외부 에셋 출처](THIRD_PARTY_ASSETS.md)
-
-과제 원문, 면접 답변, 녹화 영상, 외부 에셋 원본, Unity 캐시와 빌드 결과물은 업로드 대상에서 제외했습니다.
