@@ -30,8 +30,7 @@
 3. [UnitStateController](Scripts/Runtime/%28Main%29UnitSystem/Control/UnitStateController.cs): 이동·행동·상태 효과의 평가와 변경 이벤트.
 4. [SkillDataObject](Scripts/Runtime/%28Main%29UnitSystem/Data/Skill/SkillDataObject.cs) / [UnitSkillController](Scripts/Runtime/%28Main%29UnitSystem/Control/UnitSkillController.cs): 스킬 데이터와 실행 흐름.
 5. [UnitSkillLauncher](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillLauncher.cs) / [UnitSkillEngine](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitSkillEngine.cs): 근접·투사체 판정의 준비, 실행과 반환.
-6. [UnitParryController](Scripts/Runtime/%28Main%29UnitSystem/Components/Combat/UnitParryController.cs): 패링 유효 시간, 성공과 실패 처리.
-7. [StageController](Scripts/Runtime/StageSystem/Core/StageController.cs) / [UnitController](Scripts/Runtime/StageSystem/Unit/UnitController.cs): 웨이브 진행과 유닛 생성·반환.
+6. [StageController](Scripts/Runtime/StageSystem/Core/StageController.cs) / [UnitController](Scripts/Runtime/StageSystem/Unit/UnitController.cs): 웨이브 진행과 유닛 생성·반환.
 
 ## 설계 포인트
 
